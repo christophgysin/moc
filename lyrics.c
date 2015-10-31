@@ -17,6 +17,11 @@
 #include <errno.h>
 #include <string.h>
 
+#if HAVE_CURL
+# include <curl/curl.h>
+#endif
+#include <regex.h>
+
 #include "common.h"
 #include "files.h"
 #include "log.h"
@@ -78,8 +83,134 @@ lists_t_strs *lyrics_load_file (const char *filename)
 	return result;
 }
 
+#if HAVE_CURL
+/* Return a list of lyrics lines loaded from the internet */
+static lists_t_strs *lyrics_load_inet (struct file_tags *ft)
+{
+	lists_t_strs *result = lists_strs_new (0);
+
+	if (ft == NULL || ft->artist == NULL || ft->title == NULL) {
+		return result;
+	}
+
+	CURL *curl = curl_easy_init ();
+	if (!curl) {
+		logit ("curl init failed!");
+		return result;
+	}
+
+	/* set buffer to write error messages to */
+	char errbuf[CURL_ERROR_SIZE];
+	curl_easy_setopt (curl, CURLOPT_ERRORBUFFER, errbuf);
+
+	/* set our own user-agent */
+	curl_easy_setopt (curl, CURLOPT_USERAGENT, PACKAGE "/" VERSION);
+
+	/* create the URL */
+	{
+		char *lyrics_url = options_get_str ("LyricsUrl");
+		char *artist = curl_easy_escape (curl, ft->artist, 0);
+		char *title = curl_easy_escape (curl, ft->title, 0);
+
+		char *url = xstrdup (lyrics_url);
+
+		url = str_repl (url, "%a", artist);
+		url = str_repl (url, "%t", title);
+
+		logit ("fetching lyrics from %s", url);
+		curl_easy_setopt (curl, CURLOPT_URL, url);
+
+		free (artist);
+		free (title);
+		free (url);
+	}
+
+	/* create FILE* to buffer */
+	size_t fbufsize;
+	char *fbuf;
+	{
+		FILE *fp = open_memstream (&fbuf, &fbufsize);
+
+		/* let curl write to our FILE* */
+		curl_easy_setopt (curl, CURLOPT_WRITEDATA, fp);
+
+		/* set timeout */
+		curl_easy_setopt (curl, CURLOPT_TIMEOUT, 2);
+
+		/* perform the request */
+		CURLcode res = curl_easy_perform (curl);
+		fclose (fp);
+
+		curl_easy_cleanup (curl);
+
+		if (res != CURLE_OK) {
+			logit ("curl request failed: %s", errbuf);
+			lists_strs_append (result, "[Curl request failed]");
+			free (fbuf);
+			return result;
+		}
+
+		/* check response code */
+		long response_code;
+		curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &response_code);
+		if (response_code != 200) {
+			logit ("curl request returned: %li", response_code);
+			lists_strs_append (result, "[No lyrics found]");
+			free (fbuf);
+			return result;
+		}
+	}
+
+	/* compile regular expression */
+	regex_t regex;
+	char *lyrics_regex = options_get_str ("LyricsRegex");
+	{
+		int ret = regcomp (&regex, lyrics_regex, REG_EXTENDED);
+		if (ret != 0)
+		{
+			logit ("invalid regex: %s", lyrics_regex);
+			lists_strs_append (result, "[Could not compile LyricsRegex]");
+			free (fbuf);
+			return result;
+		}
+	}
+
+	/* match lyrics with regex */
+	size_t nmatch = 2;
+	regmatch_t pmatch[nmatch];
+	{
+		int ret = regexec (&regex, fbuf, nmatch, pmatch, 0);
+
+		if (ret == REG_NOMATCH) {
+			logit ("failed to match regex: %s", lyrics_regex);
+			lists_strs_append (result, "[Could not match LyricsRegex]");
+			free (fbuf);
+			return result;
+		}
+	}
+
+	{
+		/* create FILE* to match */
+		size_t matchsize = pmatch[1].rm_eo - pmatch[1].rm_so;
+		char *matchbuf = fbuf + pmatch[1].rm_so;
+		FILE *fp = fmemopen (matchbuf, matchsize, "r");
+
+		/* split lines */
+		size_t bufsize = 1024;
+		char buf[bufsize];
+		while (fgets (buf, bufsize, fp) != NULL) {
+			lists_strs_append (result, buf);
+		}
+		fclose (fp);
+	}
+
+	free (fbuf);
+	return result;
+}
+#endif
+
 /* Given an audio's file name, load lyrics from the default lyrics file name. */
-void lyrics_autoload (const char *filename)
+void lyrics_autoload (const char *filename, struct file_tags *ft)
 {
 	char *lyrics_filename, *extn;
 
@@ -109,6 +240,12 @@ void lyrics_autoload (const char *filename)
 	}
 	else
 		lyrics_message = "[No lyrics file!]";
+
+#if HAVE_CURL
+	if (raw_lyrics == NULL) {
+		raw_lyrics = lyrics_load_inet (ft);
+	}
+#endif
 
 	free (lyrics_filename);
 }

@@ -231,6 +231,15 @@
 # file name with any trailing "extension" removed.)
 #AutoLoadLyrics = yes
 
+# Should MOC try to autoload the lyrics for an audio from the internet?
+# Specify an URL where to fetch lyrics from. %a marks the artist, %t the
+# title of the song.
+#LyricsUrl = "http://lyrics.wikia.com/wiki/%a:%t?action=raw"
+
+# If the LyricsUrl above does not return raw lyrics, you can specifiy a
+# regular expression to match the lyrics part within.
+#LyricsRegex = "<lyrics>\n(.*)</lyrics>"
+
 # MOC directory (where pid file, socket and state files are stored).
 # You can use ~ at the beginning.
 #MOCDir = ~/.moc

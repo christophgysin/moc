@@ -53,6 +53,8 @@
 
 #define QUEUE_CLEAR_THRESH 128
 
+static struct file_tags *get_tags (const char *file);
+
 /* Socket of the server connection. */
 static int srv_sock = -1;
 
@@ -775,7 +777,7 @@ static void update_curr_file ()
 		file_info_cleanup (&curr_file);
 		file_info_reset (&curr_file);
 		iface_set_played_file (NULL);
-		iface_load_lyrics (NULL);
+		iface_load_lyrics (NULL, NULL);
 		free (file);
 	}
 	else if (file[0] &&
@@ -816,7 +818,8 @@ static void update_curr_file ()
 		iface_set_played_file (file);
 		iface_set_played_file_title (curr_file.title);
 		/* Try to load the lyrics of the new file. */
-		iface_load_lyrics (file);
+		curr_file.tags = get_tags (file);
+		iface_load_lyrics (file, curr_file.tags);
 		/* Silent seeking makes no sense if the playing file has changed. */
 		silent_seek_pos = -1;
 		iface_set_curr_time (curr_file.curr_time);

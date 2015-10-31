@@ -4414,10 +4414,10 @@ void iface_restore ()
 		curs_set (0);
 }
 
-void iface_load_lyrics (const char *file)
+void iface_load_lyrics (const char *file, struct file_tags *ft)
 {
 	lyrics_cleanup ();
-	lyrics_autoload (file);
+	lyrics_autoload (file, ft);
 	main_win.lyrics_screen_top = 0;
 	main_win_draw (&main_win);
 }

@@ -139,7 +139,7 @@ void iface_add_file (const char *file, const char *title,
 		const enum file_type type);
 void iface_temporary_exit ();
 void iface_restore ();
-void iface_load_lyrics (const char *file);
+void iface_load_lyrics (const char *file, struct file_tags *ft);
 void iface_update_queue_positions (const struct plist *queue,
 		struct plist *playlist, struct plist *dir_list,
 		const char *deleted_file);

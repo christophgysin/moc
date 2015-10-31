@@ -11,7 +11,7 @@ typedef void lyrics_t_reaper (void *data);
 lists_t_strs *lyrics_lines_get (void);
 void lyrics_lines_set (lists_t_strs *lines);
 lists_t_strs *lyrics_load_file (const char *filename);
-void lyrics_autoload (const char *filename);
+void lyrics_autoload (const char *filename, struct file_tags *ft);
 void lyrics_use_formatter (lyrics_t_formatter, lyrics_t_reaper, void *data);
 lists_t_strs *lyrics_format (int height, int width);
 void lyrics_cleanup (void);
