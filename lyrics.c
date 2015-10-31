@@ -48,6 +48,23 @@ void lyrics_lines_set (lists_t_strs *lines)
 	lyrics_message = NULL;
 }
 
+void lyrics_save_file (const char *filename, const char *buf, size_t size)
+{
+	assert (filename);
+
+	if (file_exists (filename))
+		return;
+
+	FILE *lyrics_file = fopen (filename, "w");
+	if (lyrics_file == NULL) {
+		logit ("Error opening lyrics file for writing: '%s': %s", filename, strerror (errno));
+		return;
+	}
+
+	fwrite (buf, size, 1, lyrics_file);
+	fclose (lyrics_file);
+}
+
 /* Return a list of lyrics lines loaded from a file, or NULL on error. */
 lists_t_strs *lyrics_load_file (const char *filename)
 {
@@ -85,7 +102,7 @@ lists_t_strs *lyrics_load_file (const char *filename)
 
 #if HAVE_CURL
 /* Return a list of lyrics lines loaded from the internet */
-static lists_t_strs *lyrics_load_inet (struct file_tags *ft)
+static lists_t_strs *lyrics_load_inet (const char *filename, struct file_tags *ft)
 {
 	lists_t_strs *result = lists_strs_new (0);
 
@@ -195,6 +212,16 @@ static lists_t_strs *lyrics_load_inet (struct file_tags *ft)
 		char *matchbuf = fbuf + pmatch[1].rm_so;
 		FILE *fp = fmemopen (matchbuf, matchsize, "r");
 
+		if (options_get_bool ("StoreLyrics")) {
+			char* lyrics_filename = xstrdup (filename);
+			char* extn = ext_pos (lyrics_filename);
+			if (extn) {
+				*--extn = '\0';
+				lyrics_save_file (lyrics_filename, matchbuf, matchsize);
+			}
+			free (lyrics_filename);
+		}
+
 		/* split lines */
 		size_t bufsize = 1024;
 		char buf[bufsize];
@@ -243,7 +270,7 @@ void lyrics_autoload (const char *filename, struct file_tags *ft)
 
 #if HAVE_CURL
 	if (raw_lyrics == NULL) {
-		raw_lyrics = lyrics_load_inet (ft);
+		raw_lyrics = lyrics_load_inet (filename, ft);
 	}
 #endif
 

@@ -240,6 +240,11 @@
 # regular expression to match the lyrics part within.
 #LyricsRegex = "<lyrics>\n(.*)</lyrics>"
 
+# If lyrics are fetched from the internet, should they be stored to disk?
+# The lyrics are stored with the same filename as the audio file without the
+# extension.
+#StoreLyrics = yes
+
 # MOC directory (where pid file, socket and state files are stored).
 # You can use ~ at the beginning.
 #MOCDir = ~/.moc
