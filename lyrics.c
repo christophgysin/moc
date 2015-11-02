@@ -152,7 +152,8 @@ static lists_t_strs *lyrics_load_inet (const char *filename, struct file_tags *f
 		curl_easy_setopt (curl, CURLOPT_WRITEDATA, fp);
 
 		/* set timeout */
-		curl_easy_setopt (curl, CURLOPT_TIMEOUT, 2);
+		int timeout = options_get_int ("LyricsTimeout");
+		curl_easy_setopt (curl, CURLOPT_TIMEOUT, timeout);
 
 		/* perform the request */
 		CURLcode res = curl_easy_perform (curl);

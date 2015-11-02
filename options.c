@@ -613,6 +613,7 @@ void options_init ()
 	add_bool ("AutoLoadLyrics", true);
 	add_str  ("LyricsUrl", "http://lyrics.wikia.com/wiki/%a:%t?action=raw", CHECK_NONE);
 	add_str  ("LyricsRegex", "<lyrics>\n(.*)</lyrics>", CHECK_NONE);
+	add_int  ("LyricsTimeout", 2, CHECK_RANGE(1), 0, INT_MAX);
 	add_bool ("StoreLyrics", true);
 	add_str  ("MOCDir", "~/.moc", CHECK_NONE);
 	add_bool ("UseMMap", false);

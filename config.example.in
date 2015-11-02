@@ -240,6 +240,10 @@
 # regular expression to match the lyrics part within.
 #LyricsRegex = "<lyrics>\n(.*)</lyrics>"
 
+# Timeout in seconds for requesting lyrics. If you set this too high, the
+# interface can become unresponive. Set to 0 to disable.
+#LyricsTimeout = 2
+
 # If lyrics are fetched from the internet, should they be stored to disk?
 # The lyrics are stored with the same filename as the audio file without the
 # extension.
